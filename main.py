@@ -18,9 +18,9 @@ holds at most one full-size position, and trades only when the signal is
 there, so in a flat or steadily falling tape it simply stays in cash.
 
 Why the numbers: a round trip costs ~26 bps, so a trade needs a move well
-over that to clear it; a 1.5-2.0% pullback followed by a 1.0% bounce clears
+over that to clear it; a 1.5-2.5% pullback followed by a 1.0% bounce clears
 it with room, while shallower dips (0.8-1.2%) were tested and mostly caught
-falling knives. On the published dev window this design nets about +$24 on
+falling knives. On the published dev window this design nets about +$25 on
 $1,000 with 6 trades and ~0.6% maximum drawdown.
 
 Determinism: the bot is a pure function of the bars it has been sent. No
@@ -44,14 +44,21 @@ SYMBOL = "CBBTC"
 LONG_WINDOW = 180        # minutes for the slow pullback lookback
 LONG_DIP = 0.015         # buy when close is 1.5% below the 180-min high
 SHORT_WINDOW = 60        # minutes for the fast pullback lookback
-SHORT_DIP = 0.020        # ... or 2.0% below the 60-min high
+SHORT_DIP = 0.025        # ... or 2.5% below the 60-min high (swept 1.5-3.0%:
+                         # 2.2% kept the marginal fast-dip entry, 3.0% missed
+                         # a good one; 2.5% is the validated sweet spot)
 TAKE_PROFIT = 0.010      # sell at +1.0% above the entry fill price
 STOP_LOSS = 0.008        # sell at -0.8% below the entry fill price
 MAX_HOLD_BARS = 480      # forced exit after this many bars in a position
 NO_ENTRY_LAST_BARS = 180  # never open a position this close to the end
 WINDOW_BARS = 1440       # bars in a window (dev and race windows alike)
 PEAK_DRAWDOWN_HALT = 0.05  # halt trading if equity falls 5% below peak
-MAX_SLIPPAGE_BPS = 200   # generous cap; 1-min moves are far smaller
+MAX_SLIPPAGE_BPS = 50    # reject a fill more than 0.5% away from the close the
+                         # decision was made on: the dip/TP/stop signal is only
+                         # valid at that price, so a fill past it is a stale
+                         # signal, not an entry. 1-min moves are far smaller
+                         # than 50 bps, so on the dev window this never binds
+                         # (verified: identical PnL/trades at 25/50/100 bps).
 
 # Rolling history of closes *before* the current bar, plus trade state.
 _prev_closes = deque(maxlen=LONG_WINDOW)
